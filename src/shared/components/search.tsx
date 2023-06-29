@@ -430,7 +430,15 @@ export class Search extends Component<any, SearchState> {
             q: query,
             auth,
           };
-          resolveObjectResponse = await client.resolveObject(resolveObjectForm);
+          resolveObjectResponse = await HttpService.silent_client.resolveObject(
+            resolveObjectForm
+          );
+
+          // If we return this object with a state of failed, the catch-all-handler will redirect
+          // to an error page, so we ignore it by covering up the error with the empty state.
+          if (resolveObjectResponse.state === "failed") {
+            resolveObjectResponse = { state: "empty" };
+          }
         }
       }
     }
@@ -948,7 +956,7 @@ export class Search extends Component<any, SearchState> {
       if (auth) {
         this.setState({ resolveObjectRes: { state: "loading" } });
         this.setState({
-          resolveObjectRes: await HttpService.client.resolveObject({
+          resolveObjectRes: await HttpService.silent_client.resolveObject({
             q,
             auth,
           }),
@@ -1096,7 +1104,5 @@ export class Search extends Component<any, SearchState> {
     };
 
     this.props.history.push(`/search${getQueryString(queryParams)}`);
-
-    await this.search();
   }
 }

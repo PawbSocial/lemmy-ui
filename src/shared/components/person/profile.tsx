@@ -5,6 +5,7 @@ import {
   enableDownvotes,
   enableNsfw,
   getCommentParentId,
+  getRoleLabelPill,
   myAuth,
   myAuthRequired,
   setIsoData,
@@ -205,6 +206,7 @@ export class Profile extends Component<
     this.handleSavePost = this.handleSavePost.bind(this);
     this.handlePurgePost = this.handlePurgePost.bind(this);
     this.handleFeaturePost = this.handleFeaturePost.bind(this);
+    this.handleModBanSubmit = this.handleModBanSubmit.bind(this);
 
     // Only fetch the data if coming from another route
     if (FirstLoadService.isFirstLoad) {
@@ -483,23 +485,43 @@ export class Profile extends Component<
                       />
                     </li>
                     {isBanned(pv.person) && (
-                      <li className="list-inline-item badge text-bg-danger">
-                        {I18NextService.i18n.t("banned")}
+                      <li className="list-inline-item">
+                        {getRoleLabelPill({
+                          label: I18NextService.i18n.t("banned"),
+                          tooltip: I18NextService.i18n.t("banned"),
+                          classes: "text-bg-danger",
+                          shrink: false,
+                        })}
                       </li>
                     )}
                     {pv.person.deleted && (
-                      <li className="list-inline-item badge text-bg-danger">
-                        {I18NextService.i18n.t("deleted")}
+                      <li className="list-inline-item">
+                        {getRoleLabelPill({
+                          label: I18NextService.i18n.t("deleted"),
+                          tooltip: I18NextService.i18n.t("deleted"),
+                          classes: "text-bg-danger",
+                          shrink: false,
+                        })}
                       </li>
                     )}
                     {pv.person.admin && (
-                      <li className="list-inline-item badge text-bg-light">
-                        {I18NextService.i18n.t("admin")}
+                      <li className="list-inline-item">
+                        {getRoleLabelPill({
+                          label: I18NextService.i18n.t("admin"),
+                          tooltip: I18NextService.i18n.t("admin"),
+                          shrink: false,
+                        })}
                       </li>
                     )}
                     {pv.person.bot_account && (
-                      <li className="list-inline-item badge text-bg-light">
-                        {I18NextService.i18n.t("bot_account").toLowerCase()}
+                      <li className="list-inline-item">
+                        {getRoleLabelPill({
+                          label: I18NextService.i18n
+                            .t("bot_account")
+                            .toLowerCase(),
+                          tooltip: I18NextService.i18n.t("bot_account"),
+                          shrink: false,
+                        })}
                       </li>
                     )}
                   </ul>
@@ -647,12 +669,12 @@ export class Profile extends Component<
               value={this.state.banReason}
               onInput={linkEvent(this, this.handleModBanReasonChange)}
             />
-            <label className="col-form-label" htmlFor={`mod-ban-expires`}>
+            <label className="col-form-label" htmlFor="mod-ban-expires">
               {I18NextService.i18n.t("expires")}
             </label>
             <input
               type="number"
-              id={`mod-ban-expires`}
+              id="mod-ban-expires"
               className="form-control me-2"
               placeholder={I18NextService.i18n.t("number_of_days")}
               value={this.state.banExpireDays}
@@ -691,6 +713,8 @@ export class Profile extends Component<
             >
               {I18NextService.i18n.t("cancel")}
             </button>
+          </div>
+          <div className="mb-3 row">
             <button
               type="submit"
               className="btn btn-secondary"
@@ -987,6 +1011,7 @@ export class Profile extends Component<
           s.personRes.data.comments
             .filter(c => c.creator.id == banRes.data.person_view.person.id)
             .forEach(c => (c.creator.banned = banRes.data.banned));
+          s.personRes.data.person_view.person.banned = banRes.data.banned;
         }
         return s;
       });

@@ -1,9 +1,9 @@
 import {
   colorList,
   getCommentParentId,
+  getRoleLabelPill,
   myAuth,
   myAuthRequired,
-  newVote,
   showScores,
 } from "@utils/app";
 import { futureDaysToUnixTime, numToSI } from "@utils/helpers";
@@ -56,13 +56,14 @@ import {
   CommentNodeI,
   CommentViewType,
   PurgeType,
-  VoteType,
+  VoteContentType,
 } from "../../interfaces";
 import { mdToHtml, mdToHtmlNoImages } from "../../markdown";
 import { I18NextService, UserService } from "../../services";
 import { setupTippy } from "../../tippy";
 import { Icon, PurgeWarning, Spinner } from "../common/icon";
 import { MomentTime } from "../common/moment-time";
+import { VoteButtonsCompact } from "../common/vote-buttons";
 import { CommunityLink } from "../community/community-link";
 import { PersonListing } from "../person/person-listing";
 import { CommentForm } from "./comment-form";
@@ -283,7 +284,7 @@ export class CommentNode extends Component<CommentNodeProps, CommentNodeState> {
       node.comment_view.counts.child_count > 0;
 
     return (
-      <li className="comment" role="comment">
+      <li className="comment">
         <article
           id={`comment-${cv.comment.id}`}
           className={classNames(`details comment-node py-2`, {
@@ -308,32 +309,43 @@ export class CommentNode extends Component<CommentNodeProps, CommentNodeState> {
                   classes="icon-inline"
                 />
               </button>
+
               <span className="me-2">
                 <PersonListing person={cv.creator} />
               </span>
+
               {cv.comment.distinguished && (
-                <Icon icon="shield" inline classes={`text-danger me-2`} />
+                <Icon icon="shield" inline classes="text-danger me-2" />
               )}
-              {this.isPostCreator && (
-                <div className="badge text-bg-light d-none d-sm-inline me-2">
-                  {I18NextService.i18n.t("creator")}
-                </div>
-              )}
-              {isMod_ && (
-                <div className="badge text-bg-light d-none d-sm-inline me-2">
-                  {I18NextService.i18n.t("mod")}
-                </div>
-              )}
-              {isAdmin_ && (
-                <div className="badge text-bg-light d-none d-sm-inline me-2">
-                  {I18NextService.i18n.t("admin")}
-                </div>
-              )}
-              {cv.creator.bot_account && (
-                <div className="badge text-bg-light d-none d-sm-inline me-2">
-                  {I18NextService.i18n.t("bot_account").toLowerCase()}
-                </div>
-              )}
+
+              {this.isPostCreator &&
+                getRoleLabelPill({
+                  label: I18NextService.i18n.t("op").toUpperCase(),
+                  tooltip: I18NextService.i18n.t("creator"),
+                  classes: "text-bg-info",
+                  shrink: false,
+                })}
+
+              {isMod_ &&
+                getRoleLabelPill({
+                  label: I18NextService.i18n.t("mod"),
+                  tooltip: I18NextService.i18n.t("mod"),
+                  classes: "text-bg-primary",
+                })}
+
+              {isAdmin_ &&
+                getRoleLabelPill({
+                  label: I18NextService.i18n.t("admin"),
+                  tooltip: I18NextService.i18n.t("admin"),
+                  classes: "text-bg-danger",
+                })}
+
+              {cv.creator.bot_account &&
+                getRoleLabelPill({
+                  label: I18NextService.i18n.t("bot_account").toLowerCase(),
+                  tooltip: I18NextService.i18n.t("bot_account"),
+                })}
+
               {this.props.showCommunity && (
                 <>
                   <span className="mx-1">{I18NextService.i18n.t("to")}</span>
@@ -344,7 +356,9 @@ export class CommentNode extends Component<CommentNodeProps, CommentNodeState> {
                   </Link>
                 </>
               )}
-              {this.linkBtn(true)}
+
+              {this.getLinkButton(true)}
+
               {cv.comment.language_id !== 0 && (
                 <span className="badge text-bg-light d-none d-sm-inline me-2">
                   {
@@ -356,29 +370,18 @@ export class CommentNode extends Component<CommentNodeProps, CommentNodeState> {
               )}
               {/* This is an expanding spacer for mobile */}
               <div className="me-lg-5 flex-grow-1 flex-lg-grow-0 unselectable pointer mx-2" />
+
               {showScores() && (
                 <>
-                  <a
-                    className={`unselectable pointer ${this.scoreColor}`}
-                    onClick={linkEvent(this, this.handleUpvote)}
-                    data-tippy-content={this.pointsTippy}
+                  <span
+                    className="me-1 fw-bold"
+                    aria-label={I18NextService.i18n.t("number_of_points", {
+                      count: Number(this.commentView.counts.score),
+                      formattedCount: numToSI(this.commentView.counts.score),
+                    })}
                   >
-                    {this.state.upvoteLoading ? (
-                      <Spinner />
-                    ) : (
-                      <span
-                        className="me-1 font-weight-bold"
-                        aria-label={I18NextService.i18n.t("number_of_points", {
-                          count: Number(this.commentView.counts.score),
-                          formattedCount: numToSI(
-                            this.commentView.counts.score
-                          ),
-                        })}
-                      >
-                        {numToSI(this.commentView.counts.score)}
-                      </span>
-                    )}
-                  </a>
+                    {numToSI(this.commentView.counts.score)}
+                  </span>
                   <span className="me-1">•</span>
                 </>
               )}
@@ -420,8 +423,8 @@ export class CommentNode extends Component<CommentNodeProps, CommentNodeState> {
                     }
                   />
                 )}
-                <div className="d-flex justify-content-between justify-content-lg-start flex-wrap text-muted font-weight-bold">
-                  {this.props.showContext && this.linkBtn()}
+                <div className="d-flex justify-content-between justify-content-lg-start flex-wrap text-muted fw-bold">
+                  {this.props.showContext && this.getLinkButton()}
                   {this.props.markable && (
                     <button
                       className="btn btn-link btn-animate text-muted"
@@ -451,60 +454,14 @@ export class CommentNode extends Component<CommentNodeProps, CommentNodeState> {
                   )}
                   {UserService.Instance.myUserInfo && !this.props.viewOnly && (
                     <>
-                      <button
-                        className={`btn btn-link btn-animate ${
-                          this.commentView.my_vote === 1
-                            ? "text-info"
-                            : "text-muted"
-                        }`}
-                        onClick={linkEvent(this, this.handleUpvote)}
-                        data-tippy-content={I18NextService.i18n.t("upvote")}
-                        aria-label={I18NextService.i18n.t("upvote")}
-                        aria-pressed={this.commentView.my_vote === 1}
-                      >
-                        {this.state.upvoteLoading ? (
-                          <Spinner />
-                        ) : (
-                          <>
-                            <Icon icon="arrow-up1" classes="icon-inline" />
-                            {showScores() &&
-                              this.commentView.counts.upvotes !==
-                                this.commentView.counts.score && (
-                                <span className="ms-1">
-                                  {numToSI(this.commentView.counts.upvotes)}
-                                </span>
-                              )}
-                          </>
-                        )}
-                      </button>
-                      {this.props.enableDownvotes && (
-                        <button
-                          className={`btn btn-link btn-animate ${
-                            this.commentView.my_vote === -1
-                              ? "text-danger"
-                              : "text-muted"
-                          }`}
-                          onClick={linkEvent(this, this.handleDownvote)}
-                          data-tippy-content={I18NextService.i18n.t("downvote")}
-                          aria-label={I18NextService.i18n.t("downvote")}
-                          aria-pressed={this.commentView.my_vote === -1}
-                        >
-                          {this.state.downvoteLoading ? (
-                            <Spinner />
-                          ) : (
-                            <>
-                              <Icon icon="arrow-down1" classes="icon-inline" />
-                              {showScores() &&
-                                this.commentView.counts.upvotes !==
-                                  this.commentView.counts.score && (
-                                  <span className="ms-1">
-                                    {numToSI(this.commentView.counts.downvotes)}
-                                  </span>
-                                )}
-                            </>
-                          )}
-                        </button>
-                      )}
+                      <VoteButtonsCompact
+                        voteContentType={VoteContentType.Comment}
+                        id={this.commentView.comment.id}
+                        onVote={this.props.onCommentVote}
+                        enableDownvotes={this.props.enableDownvotes}
+                        counts={this.commentView.counts}
+                        my_vote={this.commentView.my_vote}
+                      />
                       <button
                         className="btn btn-link btn-animate text-muted"
                         onClick={linkEvent(this, this.handleReplyClick)}
@@ -1243,7 +1200,7 @@ export class CommentNode extends Component<CommentNodeProps, CommentNodeState> {
     }
   }
 
-  linkBtn(small = false) {
+  getLinkButton(small = false) {
     const cv = this.commentView;
 
     const classnames = classNames("btn btn-link btn-animate text-muted", {
@@ -1479,24 +1436,6 @@ export class CommentNode extends Component<CommentNodeProps, CommentNodeState> {
     i.props.onSaveComment({
       comment_id: i.commentView.comment.id,
       save: !i.commentView.saved,
-      auth: myAuthRequired(),
-    });
-  }
-
-  handleUpvote(i: CommentNode) {
-    i.setState({ upvoteLoading: true });
-    i.props.onCommentVote({
-      comment_id: i.commentId,
-      score: newVote(VoteType.Upvote, i.commentView.my_vote),
-      auth: myAuthRequired(),
-    });
-  }
-
-  handleDownvote(i: CommentNode) {
-    i.setState({ downvoteLoading: true });
-    i.props.onCommentVote({
-      comment_id: i.commentId,
-      score: newVote(VoteType.Downvote, i.commentView.my_vote),
       auth: myAuthRequired(),
     });
   }

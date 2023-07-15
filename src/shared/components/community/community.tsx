@@ -312,6 +312,7 @@ export class Community extends Component<
             <HtmlTags
               title={this.documentTitle}
               path={this.context.router.route.match.url}
+              canonicalPath={res.community_view.community.actor_id}
               description={res.community_view.community.description}
               image={res.community_view.community.icon}
             />
@@ -447,7 +448,7 @@ export class Community extends Component<
               nodes={commentsToFlatNodes(this.state.commentsRes.data.comments)}
               viewType={CommentViewType.Flat}
               finished={this.state.finished}
-              noIndent
+              isTopLevel
               showContext
               enableDownvotes={enableDownvotes(site_res)}
               moderators={communityRes.moderators}
@@ -485,7 +486,7 @@ export class Community extends Component<
       community && (
         <div className="mb-2">
           <BannerIconHeader banner={community.banner} icon={community.icon} />
-          <h5 className="mb-0 overflow-wrap-anywhere">{community.title}</h5>
+          <h1 className="h4 mb-0 overflow-wrap-anywhere">{community.title}</h1>
           <CommunityLink
             community={community}
             realLink

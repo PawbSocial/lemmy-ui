@@ -2,10 +2,9 @@ name: Publish Docker Image
 
 on:
   push:
-    branches: [ "main", "dockertest" ]
+    branches: [ "dockertest" ]
   create:
     tags:
-      - v*
   workflow_dispatch:
 
 env:
@@ -56,6 +55,7 @@ jobs:
 
       - name: Build and push Docker image
         uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+        if: ${{ !startsWith(github.ref, 'ref/tags/') }}
         with:
           context: .
           push: true
@@ -63,4 +63,14 @@ jobs:
           tags: |
             ghcr.io/pawbsocial/lemmy-ui:${{ steps.git_info.outputs.branch }}.${{ steps.git_info.outputs.sha_short }}
             ghcr.io/pawbsocial/lemmy-ui:${{ steps.git_info.outputs.branch }}.latest
+          labels: ${{ steps.meta.outputs.labels }}
+      
+      - name: Build and push tag Docker image
+        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+        if: ${{ startsWith(github.ref, 'ref/tags/') }}
+        with:
+          context: .
+          push: true
+          file: Dockerfile
+          tags: ghcr.io/pawbsocial/lemmy-ui:${{ github.ref_name }}
           labels: ${{ steps.meta.outputs.labels }}
